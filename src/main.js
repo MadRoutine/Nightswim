@@ -42,7 +42,8 @@ import {
     Npc,
     NpcList,
     Location,
-    LocationList
+    LocationList,
+    resetObjects
 } from "./classes.js";
 
 const VERSION = "0.9.1";
@@ -728,9 +729,14 @@ const change = function (changeArray) {
     let objRef;
     let objType;
     let feedback = [];
+    let restarted = false;
     let i = 0;
+    let j = 0;
 
-    changeArray.forEach(function (changeObj) {
+    while (changeArray.length < j) {
+
+        let changeObj = changeArray[j];
+
         switch (changeObj.type) {
 
         case "addScene":
@@ -963,6 +969,13 @@ const change = function (changeArray) {
             }
             break;
 
+        case "restart":
+            // Nothing required
+            restartStory();
+            success = true;
+            restarted = true;
+            break;
+
         case "triggerCutscene":
             // REQUIRED: cutscene
             if (
@@ -1004,7 +1017,16 @@ const change = function (changeArray) {
         } else if (!success) {
             logError("consequence failed: " + changeObj.type);
         }
-    });
+
+        j += 1;
+
+        /* In case the "restart" consequence was called: cancel all other
+        consequences */
+        if (restarted) {
+            j = changeArray.length;
+            break;
+        }
+    }
 
     if (feedback.length > 0) {
         compositFeedback(feedback);
@@ -1012,7 +1034,7 @@ const change = function (changeArray) {
 
 };
 
-const devAutoStart = function () {
+const autoStart = function () {
     // This function runs at the start when init.devAutoStart is true
     waitUntilLoaded = setInterval(function () {
         if (
@@ -1047,6 +1069,26 @@ const devAutoStart = function () {
     }, 100);
 };
 
+const restartStory = function () {
+    // Empty and reset everything
+    init = {};
+    initLoaded = false;
+    ObjListLoaded = false;
+    NpcListLoaded = false;
+    LocationListLoaded = false;
+    resetObjects();
+
+    // Reinitialize
+    initStory();
+    waitUntilLoaded = setInterval(function () {
+        if (initLoaded && audioLoaded === "loaded") {
+            clearInterval(waitUntilLoaded);
+            // Restart
+            autoStart();
+        }
+    }, 100);
+};
+
 $(document).ready(function () {
 
     console.log("This story is powered by Nightswim " + VERSION);
@@ -1072,7 +1114,7 @@ $(document).ready(function () {
             });
 
             if (init.devAutoStart) {
-                devAutoStart();
+                autoStart();
             }
         }
     }, 100);
@@ -1159,5 +1201,6 @@ export {
     checkConditions,
     change,
     logError,
-    Inventory
+    Inventory,
+    restartStory
 };

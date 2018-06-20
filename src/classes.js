@@ -437,6 +437,12 @@ const getObj = function (objID) {
     };
 };
 
+const resetObjects = function () {
+    LocationList.clear();
+    NpcList.clear();
+    ObjList.clear();
+};
+
 export default "loaded";
 export {
     getObj,
@@ -445,5 +451,6 @@ export {
     NpcList,
     Npc,
     ObjList,
-    Obj
+    Obj,
+    resetObjects
 };
