@@ -1505,27 +1505,28 @@ $(document).ready(function () {
 
                                 initAudio(preLoadAudio);
 
+                                let startLocRef;
+
+                                if (storedSpace === "locScene") {
+                                    // Doesn't actually exist, so get next audio
+                                    let nextLoc = localStorage.getItem("playerCurrentLoc");
+                                    startLocRef = LocationList.get(nextLoc);
+                                } else {
+                                    startLocRef = LocationList.get(storedSpace);
+                                }
+
+                                // Retrieve audio object for this location from audio module. 
+                                firstAudioTrack = getAudioTrack(startLocRef.locSnd);
+                                setCurrentTrack(firstAudioTrack);
+
                                 if (!init.muteSound) {
                                     // We had to wait for this until initAudio was called
-                                    let startLocRef;
-
-                                    if (storedSpace === "locScene") {
-                                        // Doesn't actually exist, so get next audio
-                                        let nextLoc = localStorage.getItem("playerCurrentLoc");
-                                        startLocRef = LocationList.get(nextLoc);
-                                    } else {
-                                        startLocRef = LocationList.get(storedSpace);
-                                    }
-
-                                    if (startLocRef.locSnd !== "no_sound") {
+                                    if (firstAudioTrack.filename !== "no_sound") {
                                         /*
-                                        Retrieve audio object for this location from audio
-                                        module. We have to start playback here, or else
+                                        We have to start playback here, or else
                                         Safari will not count clicking "Lets go" as a
                                         user interaction that can start sound playback.
                                         */
-                                        firstAudioTrack = getAudioTrack(startLocRef.locSnd);
-                                        setCurrentTrack(firstAudioTrack);
                                         firstAudioTrack.howl.load();
                                         console.log("Loading audiotrack: " +
                                             firstAudioTrack.filename);
@@ -1595,18 +1596,20 @@ $(document).ready(function () {
 
                             initAudio(preLoadAudio);
 
+                            let startLocRef = LocationList.get(init.startLocation);
+                            // Retrieve audio object for this location from audio module.
+                            firstAudioTrack = getAudioTrack(startLocRef.locSnd);
+                            setCurrentTrack(firstAudioTrack);
+
                             if (!init.muteSound) {
                                 // We had to wait for this until initAudio was called
-                                let startLocRef = LocationList.get(init.startLocation);
-                                if (startLocRef.locSnd !== "no_sound") {
+                                
+                                if (firstAudioTrack.filename !== "no_sound") {
                                     /*
-                                    Retrieve audio object for this location from audio
-                                    module. We have to start playback here, or else
+                                    We have to start playback here, or else
                                     Safari will not count clicking "Lets go" as a
                                     user interaction that can start sound playback.
                                     */
-                                    firstAudioTrack = getAudioTrack(startLocRef.locSnd);
-                                    setCurrentTrack(firstAudioTrack);
                                     firstAudioTrack.howl.load();
                                     console.log("Loading first audiotrack: " +
                                         firstAudioTrack.filename);

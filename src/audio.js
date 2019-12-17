@@ -13,14 +13,15 @@ sound.howl (is a Howl object)
 */
 
 let soundMuted = false;
-let allTracks = [];
-let allSounds = [];
 let playbackQueue = [];
-let currentTrack = {
+let no_sound = {
     filename: "no_sound",
     howl: null
 };
-let playback = "stopped";
+let currentTrack = no_sound;
+let allTracks = [no_sound];
+let allSounds = [];
+let playback = "paused";
 let prevAction = "none";
 let lockChange = false;
 let fadeTime = 1000;
@@ -38,8 +39,10 @@ const changePlayback = function () {
     let nextTrack = playbackQueue[lastIndex].nextTrack;
     let thisFadeTime = fadeTime;
 
+    console.log("Changing playback, playback is currently: " + playback);
+    
     if (
-        playback === "stopped" &&
+        playback === "paused" &&
         prevAction !== "fadein" && (
         (type === "fadein") ||
         (type === "playTrack" && currentTrack.filename === "no_sound")
@@ -79,12 +82,7 @@ const changePlayback = function () {
 
             setTimeout(function () {
                 thisTrack.howl.pause();
-                playback = "stopped";
-
-                nextTrack = {
-                    filename: "no_sound",
-                    howl: null
-                };
+                playback = "paused";
 
                 $("#soundInfo").text("playback paused");
             }, fadeTime);
@@ -152,6 +150,8 @@ const requestPlaybackChange = function (request) {
         }
     */
 
+    console.log("Playback change requested: " + request.type);
+
     // Add job to playbackQueue
     playbackQueue.push(request);
 
@@ -211,21 +211,25 @@ const changeTrack = function (newSnd) {
                 }
             } else if (found && soundMuted) {
                 // Only update currentTrack
-                nextTrack = allTracks[trackNr];
                 requestPlaybackChange({
                     type: "update",
-                    nextTrack: null
+                    nextTrack: no_sound
                 });
             }
 
         } else {
-            /* Just fade out current track if the new location
-            has "no_sound", unless sound is muted */
-
+            /* newSnd has a value of "no_sound":
+            Just fade out current track, unless sound is muted */
             if (!soundMuted) {
                 requestPlaybackChange({
                     type: "fadeout",
-                    nextTrack: null
+                    nextTrack: no_sound
+                });
+            } else {
+                // Only update currentTrack
+                requestPlaybackChange({
+                    type: "update",
+                    nextTrack: no_sound
                 });
             }
 
@@ -299,6 +303,7 @@ const muteSound = function () {
     if (soundMuted) {
         // Unmute
         soundMuted = false;
+        console.log("Sound unmuted, currentTrack is " + currentTrack.filename);
 
         if (typeof(Storage) !== "undefined") {
             // Save sound setting in local storage
@@ -307,11 +312,17 @@ const muteSound = function () {
 
         if (currentTrack.filename !== "no_sound") {
             if (currentTrack.howl.state() === "loaded") {
-                requestPlaybackChange("fadein");
+                requestPlaybackChange({
+                    type: "fadein",
+                    nextTrack: currentTrack
+                });
             } else {
                 currentTrack.howl.load();
                 currentTrack.howl.once("load", function () {
-                    requestPlaybackChange("fadein");
+                    requestPlaybackChange({
+                        type: "fadein",
+                        nextTrack: currentTrack
+                    });
                 });
             }
 
@@ -323,6 +334,7 @@ const muteSound = function () {
     } else {
         // Mute
         soundMuted = true;
+        console.log("Sound muted, currentTrack is " + currentTrack.filename);
 
         if (typeof(Storage) !== "undefined") {
             // Save sound setting in local storage
@@ -330,7 +342,10 @@ const muteSound = function () {
         }
 
         if (currentTrack.filename !== "no_sound") {
-            requestPlaybackChange("fadeout");
+            requestPlaybackChange({
+                type: "fadeout",
+                nextTrack: currentTrack
+            });
         }
 
         $("#soundBtn").removeClass("sound_on");
@@ -345,11 +360,18 @@ const setAudioFadeTime = function (newFadeTime) {
 };
 
 const setCurrentTrack = function (track) {
-    // This function will run at the beginning and makes sure
-    // everything is properly set to this track.
+    // This function will run at the beginning
     currentTrack = track;
-    playback = "playing";
-    $("#soundInfo").text("playing: " + currentTrack.filename);
+
+    if (currentTrack.filename !== "no_sound" && !soundMuted) {
+        playback = "playing";
+
+        $("#soundInfo").text("playing " + track.filename);
+    } else {
+        playback = "paused";
+
+        $("#soundInfo").text("playback paused");
+    }
 };
 
 const getAudioTrack = function (filename) {
