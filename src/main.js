@@ -572,13 +572,22 @@ const initStory = function () {
         logError("Locations not loaded. This is probably caused by a syntax-error in locations.json");
     });
 
-    // Taking settings from init.js
+    // Taking settings from init.json
     $.getJSON("story/init.json", function (initObj) {
         init = initObj;
         initLoaded = true;
     }).fail(function () {
         logError("Init settings not loaded. This is probably caused by a syntax-error in init.json");
     });
+
+    // TEST: get render.js
+    $.getScript("story/render.js")
+        .done(function () {
+            pixies.pixi_001.enter();
+        })
+        .fail(function () {
+            console.log("Failed to load render.js");
+        })
 
 };
 
