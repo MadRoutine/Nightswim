@@ -37,29 +37,26 @@ let pixies = {
             app.renderer.backgroundColor = 0x0000FF;
         },
         exit: function () {
-            console.log("Exiting PIXI stage of Apartment");
         },
-        scene: function (tag) { }
+        scene: function (tag, text) { }
     },
     street: {
         enter: function () {
             console.log("Entering PIXI stage of Street");
-            app.renderer.backgroundColor = 0xFF00FF;
+            app.renderer.backgroundColor = 0xCC00CC;
         },
         exit: function () {
-            console.log("Exiting PIXI stage of Street");
         },
-        scene: function (tag) { }
+        scene: function (tag, text) { }
     },
     forest: {
         enter: function () {
             console.log("Entering PIXI stage of Forest");
-            app.renderer.backgroundColor = 0x00FF00;
+            app.renderer.backgroundColor = 0x00AA00;
         },
         exit: function () {
-            console.log("Exiting PIXI stage of Forest");
         },
-        scene: function (tag) { }
+        scene: function (tag, text) { }
     }
 };
 

@@ -254,7 +254,7 @@ const enterLocation = function () {
         2. When a scene is present: start it.
         3. If neither is the case: show location content */
 
-    let disableHTML = false;
+    let HTMLEnabled = true;
     let locationChangeInProgress = true;
     let newLoc = locationQueue[0];
     let newLocRef = LocationList.get(newLoc);
@@ -271,22 +271,12 @@ const enterLocation = function () {
 
     // Pixi: exit previous and enter new
     if (PixiEnabled) {
+        let enter = false;
         let currentLocRef = LocationList.get(player.currentLoc);
 
         if (currentLocRef === undefined) {
             // This happens at the start
-            if (newLocRef.pixi !== undefined) {
-                if (pixies[newLocRef.pixi.id] !== undefined) {
-                    if (init.pixiSettings.globalSolo) {
-                        disableHTML = true;
-                    } else {
-                        disableHTML = pixies[newLocRef.pixi.solo];
-                    }
-
-                    // Enter
-                    pixies[newLocRef.pixi.id].enter();
-                }
-            }
+            enter = true;
         } else if (currentLocRef !== newLocRef) {
             if (currentLocRef.pixi !== undefined) {
                 if (pixies[currentLocRef.pixi.id] !== undefined) {
@@ -296,11 +286,17 @@ const enterLocation = function () {
             }
     
             if (newLocRef.pixi !== undefined) {
+                enter = true;
+            }
+        }
+
+        if (enter) {
+            if (newLocRef.pixi !== undefined) {
                 if (pixies[newLocRef.pixi.id] !== undefined) {
                     if (init.pixiSettings.globalSolo) {
-                        disableHTML = true;
-                    } else {
-                        disableHTML = pixies[newLocRef.pixi.solo];
+                        HTMLEnabled = false;
+                    } else if (pixies[newLocRef.pixi.solo]) {
+                        HTMLEnabled = false;
                     }
 
                     // Enter
@@ -383,102 +379,110 @@ const enterLocation = function () {
 
     // 3 - Display Location content
     // Only continue if no scene was triggered
-    if (!sceneTriggered && !disableHTML) {
-        /*
-        parseLocation returns an array with this
-        layout:
-            [
-                {
-                    section: "sectionHTML",
-                    delay: delayTime (optional)
+    if (!sceneTriggered) {
+        // If Pixi is enabled: check and run Pixi-scenes whose conditions are true
+        if (PixiEnabled) {
+            let scenes = newLocRef.pixi.scenes;
+            scenes.forEach(function (scene, i) {
+                if (checkConditions(scene.conditions)) {
+                    pixies[newLocRef.pixi.id].scene(scene.tag, scene.text);
                 }
-            ]
-        */
-        let locContent = parseLocation(newLocRef.content);
-
-        player.inScene = false;
-
-        // Fade out everything
-        fadeOut("text");
-        fadeOut("choices");
-
-        /* Replace content & choices.
-        The timeout is because we have to wait for the
-        fade out to finish */
-        setTimeout(function () {
-
-            let compositHTML = "";
-            let delayArray = [];
-            let delayNr = 0;
-            let delayID;
-
-            /* Display all sections, wrap delays in Divs, and
-            afterwards select these Divs and set opacity to 1; */
-            locContent.forEach(function (section) {
-
-                if (section.delay !== undefined && section.delay > 0) {
-
-                    delayID = "delay_" + delayNr;
-
-                    section.sectionHTML = "<div id=\"" + delayID +
-                    "\" class=\"waitForFade\">" + section.sectionHTML +
-                    "</div>";
-
-                    delayArray.push(section.delay);
-
-                    delayID += 1;
-
-                }
-
-                compositHTML += section.sectionHTML;
             });
+        }
 
-            replaceById("text", compositHTML, 0, newLoc);
-            createButtons();
-            fadeIn("text");
-            fadeIn("choices");
-
-            // Go through delayArray to fade in sections
-            delayNr = 0;
-            delayArray.forEach (function (delayTime) {
-                /* Important: the delayNr that's included in the delayID matches the index of the times in the delayArray.
-                In other words: delayArray[0] contains the delay time
-                (in milliseconds) that corresponds with
-                <div id="delay_0">
-                */
-                let i = delayNr;
-                let locBeforeTimeout = newLoc;
-                let visitCountBeforeTimeout = newLocRef.getVisited();
-
-                setTimeout(function () {
-                    /* We need to check if the location didn't change
-                    during the timeout and if player didn't re-enter the same
-                    location */
-                    if (
-                        player.currentSpace === locBeforeTimeout &&
-                        visitCountBeforeTimeout === newLocRef.getVisited()
-                    ) {
-                        document.getElementById(
-                            "delay_" + i
-                        ).style.opacity = 1;
+        // If HTML is enabled: show the HTML
+        if (HTMLEnabled) { 
+            /*
+            parseLocation returns an array with this
+            layout:
+                [
+                    {
+                        section: "sectionHTML",
+                        delay: delayTime (optional)
                     }
-                }, delayTime);
-                delayNr += 1;
-            });
+                ]
+            */
+            let locContent = parseLocation(newLocRef.content);
 
-            // Wait till fade-ins are done
+            player.inScene = false;
+
+            // Fade out everything
+            fadeOut("text");
+            fadeOut("choices");
+
+            /* Replace content & choices.
+            The timeout is because we have to wait for the
+            fade out to finish */
             setTimeout(function () {
-                // Entering location done
-                locationChangeInProgress = false;
-            }, fadeTime);
-        }, fadeTime);
-    }
 
-    // Let's deal with the locationQueue
-    if (sceneTriggered) {
-        // Get rid of any further requested location changes
-        locationQueue = [];
-    } else {
+                let compositHTML = "";
+                let delayArray = [];
+                let delayNr = 0;
+                let delayID;
+
+                /* Display all sections, wrap delays in Divs, and
+                afterwards select these Divs and set opacity to 1; */
+                locContent.forEach(function (section) {
+
+                    if (section.delay !== undefined && section.delay > 0) {
+
+                        delayID = "delay_" + delayNr;
+
+                        section.sectionHTML = "<div id=\"" + delayID +
+                        "\" class=\"waitForFade\">" + section.sectionHTML +
+                        "</div>";
+
+                        delayArray.push(section.delay);
+
+                        delayID += 1;
+
+                    }
+
+                    compositHTML += section.sectionHTML;
+                });
+
+                replaceById("text", compositHTML, 0, newLoc);
+                createButtons();
+                fadeIn("text");
+                fadeIn("choices");
+
+                // Go through delayArray to fade in sections
+                delayNr = 0;
+                delayArray.forEach (function (delayTime) {
+                    /* Important: the delayNr that's included in the delayID matches the index of the times in the delayArray.
+                    In other words: delayArray[0] contains the delay time
+                    (in milliseconds) that corresponds with
+                    <div id="delay_0">
+                    */
+                    let i = delayNr;
+                    let locBeforeTimeout = newLoc;
+                    let visitCountBeforeTimeout = newLocRef.getVisited();
+
+                    setTimeout(function () {
+                        /* We need to check if the location didn't change
+                        during the timeout and if player didn't re-enter the same
+                        location */
+                        if (
+                            player.currentSpace === locBeforeTimeout &&
+                            visitCountBeforeTimeout === newLocRef.getVisited()
+                        ) {
+                            document.getElementById(
+                                "delay_" + i
+                            ).style.opacity = 1;
+                        }
+                    }, delayTime);
+                    delayNr += 1;
+                });
+
+                // Wait till fade-ins are done
+                setTimeout(function () {
+                    // Entering location done
+                    locationChangeInProgress = false;
+                }, fadeTime);
+            }, fadeTime);
+        }
+ 
+        // Let's deal with the locationQueue
         let waitUntilFinished = setInterval(function () {
             if (!locationChangeInProgress && !PixiBusy) {
                 clearInterval(waitUntilFinished);
@@ -500,6 +504,10 @@ const enterLocation = function () {
                 }
             }
         }, 100);
+    } else {
+        // A scene was started:
+        // Get rid of any further requested location changes
+        locationQueue = [];
     }
 
     updateDebugStats();
