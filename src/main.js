@@ -186,18 +186,10 @@ const logError = function (msg) {
 const logAction = function (changeObj) {
     // This function adds an entry to actionLog
     // And saves it to localStorage
-    if (changeObj.type !== "changeLoc" &&
-        changeObj.type !== "fadeOut" &&
-        changeObj.type !== "playsound" &&
-        changeObj.type !== "refresh" &&
-        changeObj.type !== "triggerCutscene" &&
-        changeObj.type !== "triggerScene")
-    {
-        actionLog.push(changeObj);
+    actionLog.push(changeObj);
 
-        if (typeof(Storage) !== "undefined") {
-            localStorage.setItem("actionLog", JSON.stringify(actionLog));
-        }
+    if (typeof (Storage) !== "undefined") {
+        localStorage.setItem("actionLog", JSON.stringify(actionLog));
     }
 };
 
@@ -1076,6 +1068,7 @@ const change = function (changeArray, showFeedback = true) {
     let soundIndex;
     let feedback = [];
     let i = 0;
+    let toLog = true;
 
     changeArray.forEach(function (changeObj) {
         let success = false;
@@ -1116,6 +1109,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "changeLoc":
+            toLog = false;
             // REQUIRED: loc
             locRef = LocationList.get(changeObj.loc);
             if (
@@ -1238,14 +1232,6 @@ const change = function (changeArray, showFeedback = true) {
             }
             break;
 
-        case "setStorySetting":
-            // REQUIRED: storySetting, value
-            if (settings[changeObj.storySetting] !== undefined) {
-                settings[changeObj.storySetting] = changeObj.value;
-                success = true;
-            }
-            break;
-
         case "disableChoice":
             // REQUIRED: choice
             if (
@@ -1257,6 +1243,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "displayTxt":
+            toLog = false;
             // REQUIRED: txt
             if (
                 changeObj.txt !== undefined &&
@@ -1278,6 +1265,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "fadeOut":
+            toLog = false;
             // REQUIRED: id
             if (
                 changeObj.id !== undefined &&
@@ -1316,6 +1304,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "playSound":
+            toLog = false;
             // REQUIRED: url
             if (
                 changeObj.url !== undefined &&
@@ -1331,6 +1320,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "refresh":
+            toLog = false;
             // Nothing required
             refreshLocation();
             success = true;
@@ -1348,6 +1338,22 @@ const change = function (changeArray, showFeedback = true) {
                 success = true;
             }
             break;
+
+        case "render":
+            toLog = false;
+            // REQUIRED: pixi_id, tag
+            if (
+                changeObj.pixi_id !== undefined &&
+                typeof(changeObj.pixi_id === "string") &&
+                changeObj.tag !== undefined &&
+                typeof(changeObj.tag === "string")
+                ) {
+                    if (pixies[changeObj.pixi_id] !== undefined) {
+                        pixies[changeObj.pixi_id].scene(changeObj.tag);
+                        success = true;
+                    }
+                }
+                break;
 
         case "sceneDeactivate":
             // REQUIRED: locID, scene
@@ -1372,7 +1378,16 @@ const change = function (changeArray, showFeedback = true) {
             }
             break;
 
+        case "setStorySetting":
+            // REQUIRED: storySetting, value
+            if (settings[changeObj.storySetting] !== undefined) {
+                settings[changeObj.storySetting] = changeObj.value;
+                success = true;
+            }
+            break;
+
         case "triggerCutscene":
+            toLog = false;
             // REQUIRED: cutscene
             if (
                 changeObj.cutscene !== undefined &&
@@ -1384,6 +1399,7 @@ const change = function (changeArray, showFeedback = true) {
             break;
 
         case "triggerScene":
+            toLog = false;
             // REQUIRED: scene
             if (
                 changeObj.scene !== undefined &&
@@ -1406,7 +1422,9 @@ const change = function (changeArray, showFeedback = true) {
         }
 
         if (success) {
-            logAction(changeObj);
+            if (toLog) {
+                logAction(changeObj);
+            }
         } else {
             logError("consequence failed: " + changeObj.type);
         }
