@@ -16,7 +16,7 @@ let ObjList = new Map();
 class Location {
     constructor(
         locID, name, accessMsg, locImg, locSnd, cutscenes, scenes, content,
-        styling
+        styling, pixi
     ) {
         this.name = name;
         this.accessMsg = accessMsg;
@@ -26,6 +26,7 @@ class Location {
         this.scenes = scenes;
         this.content = content;
         this.styling = styling;
+        this.pixi = pixi;
         this.visited = 0;
 
         LocationList.set(locID, this);

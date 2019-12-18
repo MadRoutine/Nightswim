@@ -1,4 +1,5 @@
-import audioLoaded from "./audio.js";
+// audioModuleLoaded is the default export
+import audioModuleLoaded from "./audio.js";
 import {
     changeTrack,
     initAudio,
@@ -48,7 +49,7 @@ import {
     LocationList
 } from "./classes.js";
 
-const VERSION = "1.1.0-beta2";
+const VERSION = "1.2.0-alpha";
 let settings = {};
 let ObjListLoaded = false;
 let NpcListLoaded = false;
@@ -155,6 +156,9 @@ let player = {
     }
 };
 
+// PIXI-related:
+let PixiEnabled = false;
+
 const updateDebugStats = function () {
     if (soundMuted) {
         $("#soundInfo").html("muted");
@@ -257,10 +261,12 @@ const enterLocation = function () {
         2. When a scene is present: start it.
         3. If neither is the case: show location content */
 
-    updateDebugStats();
-    player.upEventID();
+    let disableHTML = false;
     let newLoc = locationQueue[0];
     let newLocRef = LocationList.get(newLoc);
+
+    updateDebugStats();
+    player.upEventID();
 
     // We will have to leave 'object' mode when entering a new location
     player.inObject = false;
@@ -269,15 +275,52 @@ const enterLocation = function () {
         hideMenu();
     }
 
+    // Pixi: exit previous and enter new
+    if (PixiEnabled) {
+        let currentLocRef = LocationList.get(player.currentLoc);
+
+        if (currentLocRef === undefined) {
+            // This happens at the start
+            if (newLocRef.pixi !== undefined) {
+                if (pixies[newLocRef.pixi.id] !== undefined) {
+                    if (init.pixiSettings.globalSolo) {
+                        disableHTML = true;
+                    } else {
+                        disableHTML = pixies[newLocRef.pixi.solo];
+                    }
+
+                    // Enter
+                    pixies[newLocRef.pixi.id].enter();
+                }
+            }
+        } else if (currentLocRef !== newLocRef) {
+            if (currentLocRef.pixi !== undefined) {
+                if (pixies[currentLocRef.pixi.id] !== undefined) {
+                    // Exit
+                    pixies[currentLocRef.pixi.id].exit();
+                }
+            }
+    
+            if (newLocRef.pixi !== undefined) {
+                if (pixies[newLocRef.pixi.id] !== undefined) {
+                    if (init.pixiSettings.globalSolo) {
+                        disableHTML = true;
+                    } else {
+                        disableHTML = pixies[newLocRef.pixi.solo];
+                    }
+
+                    // Enter
+                    pixies[newLocRef.pixi.id].enter();
+                }
+            }
+        }
+    }
+
     // Change background image
     changeBg(newLocRef);
 
     // Change audio track
     changeTrack(newLocRef.locSnd);
-
-    if (newLocRef.name !== "In scene") {
-        player.currentLoc = newLoc;
-    }
 
     player.setLocation(newLoc);
     player.inScene = false;
@@ -345,10 +388,11 @@ const enterLocation = function () {
     }
 
     // 3 - Display Location content
+    // Only continue if no scene was triggered
     if (sceneTriggered) {
         // Get rid of any further requested location changes
         locationQueue = [];
-    } else {
+    } else if (!disableHTML) {
         /*
         parseLocation returns an array with this
         layout:
@@ -544,7 +588,7 @@ const initStory = function () {
 
         // Wait for Obj's and Npc's to be done loading
         let waitUntilStoryDataLoaded = setInterval(function () {
-            if (ObjListLoaded && NpcListLoaded && audioLoaded === "loaded") {
+            if (ObjListLoaded && NpcListLoaded && audioModuleLoaded === "loaded") {
 
                 clearInterval(waitUntilStoryDataLoaded);
 
@@ -558,7 +602,8 @@ const initStory = function () {
                         loc.cutscenes,
                         loc.scenes,
                         loc.content,
-                        loc.styling
+                        loc.styling,
+                        loc.pixi
                     );
                 });
                 LocationListLoaded = true;
@@ -581,20 +626,23 @@ const initStory = function () {
     });
 
     // TEST: get render.js
+    /*
     $.getScript("story/render.js")
         .done(function () {
-            pixies.pixi_001.enter();
+            // File has loaded, but isn't necessarily executed.
+            // Render.js sets renderScriptExecuted to true
         })
         .fail(function () {
             console.log("Failed to load render.js");
         })
-
+    */
 };
 
 const startStory = function (startFresh) {
     let scene;
     let sceneChoice;
     let playScene = false;
+    let startAtLoc;
 
     // Make scene location object
     let thisLoc = new Location(
@@ -700,15 +748,15 @@ const startStory = function (startFresh) {
         } else if (storedSpace === "locScene" && localStorage.getItem("cutscene") === "true") {
             // Player was in the middle of a cutscene
             // Set location to previous actual location
-            player.currentLoc = localStorage.getItem("playerCurrentLoc");
+            startAtLoc = localStorage.getItem("playerCurrentLoc");
             player.currentSpace = localStorage.getItem("playerCurrentLoc");
             player.prevSpace =  localStorage.getItem("playerPrevSpace");
         } else {
-            player.setLocation(storedSpace);
+            startAtLoc = storedSpace;
         }
     } else {
         // New playthrough
-        player.setLocation(init.startLocation);
+        startAtLoc = init.startLocation;
     }
 
     if (typeof(Storage) !== "undefined") {
@@ -724,22 +772,28 @@ const startStory = function (startFresh) {
         localStorage.setItem("cutscene", "false");
     }
 
-    setTimeout(function () {
-        /*
-        requestLocChange does a fadeOut & fadeIn of #text and #choices,
-        but since we want a nicer, slower fade out and fade in of the
-        title screen we have to do that on the entire #container.
-        The fadeOut already happened after the click event.
-        */
-        fadeIn("container", slowerFadeTime);
-    }, fadeTime);
-
-    if (playScene) {
-        //resume scene
-        loadScene(scene, sceneChoice);
-    } else {
-        requestLocChange(player.currentLoc);
-    }
+    waitUntilLoaded = setInterval(function () {
+        // We're not sure if Pixi has loaded yet, so let's check!
+        if (!PixiEnabled || PixiLoaded) {
+            clearInterval(waitUntilLoaded);
+            setTimeout(function () {
+                /*
+                requestLocChange does a fadeOut & fadeIn of #text and #choices,
+                but since we want a nicer, slower fade out and fade in of the
+                title screen we have to do that on the entire #container.
+                The fadeOut already happened after the click event.
+                */
+                fadeIn("container", slowerFadeTime);
+            }, fadeTime);
+        
+            if (playScene) {
+                //resume scene
+                loadScene(scene, sceneChoice);
+            } else {
+                requestLocChange(startAtLoc);
+            }
+        }
+    }, 100);
 };
 
 const directAction = function (obj) {
@@ -1359,7 +1413,7 @@ const devAutoStart = function () {
             NpcList and ObjList have loaded */
             LocationListLoaded &&
             initLoaded &&
-            audioLoaded === "loaded"
+            audioModuleLoaded === "loaded"
         ) {
             clearInterval(waitUntilLoaded);
             let preLoadAudio;
@@ -1385,14 +1439,19 @@ const devAutoStart = function () {
 
 $(document).ready(function () {
     let resumePossible = false;
+    startButtonLocked = false;
 
     console.log("This story is powered by Nightswim " + VERSION);
     initStory();
 
     waitUntilLoaded = setInterval(function () {
-        if (initLoaded && audioLoaded === "loaded") {
+        if (initLoaded && renderScriptExecuted && audioModuleLoaded === "loaded") {
 
             clearInterval(waitUntilLoaded);
+
+            if (init.pixiSettings.enabled) {
+                PixiEnabled = true;
+            }
 
             // Check for saved progress
             // First check if web storage is available
@@ -1400,6 +1459,7 @@ $(document).ready(function () {
                 if (localStorage.getItem("version") !== undefined && localStorage.getItem("playerCurrentSpace") !== undefined) {
                     console.log("Stored version is " + localStorage.getItem("version"));
                     console.log("Stored playerCurrentSpace is " + localStorage.getItem("playerCurrentSpace"));
+
                     // Check compatibility of the version that was used to
                     // save the progress vs. the current version of the story
                     storedVersion = localStorage.getItem("version");
@@ -1480,7 +1540,7 @@ $(document).ready(function () {
                                 NpcList and ObjList have loaded */
                                 LocationListLoaded &&
                                 initLoaded &&
-                                audioLoaded === "loaded"
+                                audioModuleLoaded === "loaded"
                             ) {
                                 clearInterval(waitUntilLoaded);
                                 let preLoadAudio;
@@ -1571,7 +1631,7 @@ $(document).ready(function () {
                             NpcList and ObjList have loaded */
                             LocationListLoaded &&
                             initLoaded &&
-                            audioLoaded === "loaded"
+                            audioModuleLoaded === "loaded"
                         ) {
                             clearInterval(waitUntilLoaded);
                             let preLoadAudio;

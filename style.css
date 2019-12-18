@@ -22,6 +22,11 @@ body.std {
     background-color: rgb(5, 5, 5);
 }
 
+canvas {
+    z-index: -1;
+    opacity: 0;
+}
+
 #bg_layer_top, #bg_layer_bottom {
     position: absolute;
     top: 0;

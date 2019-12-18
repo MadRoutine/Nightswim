@@ -26,6 +26,17 @@
             "bgClass": "secretroomBg",
             "buttonClass": "secretroomButton",
             "containerClass": "secretroomContainer"
+        },
+        "pixi": {
+            "id": "apt",
+            "solo": false,
+            "scenes": [
+                {
+                "tag": "",
+                "text": "",
+                "conditions": []
+                }
+            ]
         }
     },
     {
@@ -82,6 +93,17 @@
             "containerClass": "std",
             "buttonClass": "std",
             "bgClass": "std"
+        },
+        "pixi": {
+            "id": "apt",
+            "solo": false,
+            "scenes": [
+                {
+                "tag": "",
+                "text": "",
+                "conditions": []
+                }
+            ]
         }
     },
     {
@@ -124,6 +146,17 @@
             "containerClass": "std",
             "buttonClass": "std",
             "bgClass": "std"
+        },
+        "pixi": {
+            "id": "street",
+            "solo": false,
+            "scenes": [
+                {
+                "tag": "",
+                "text": "",
+                "conditions": []
+                }
+            ]
         }
     },
     {
@@ -161,6 +194,17 @@
             "bgClass": "",
             "buttonClass": "std",
             "containerClass": "std"
+        },
+        "pixi": {
+            "id": "forest",
+            "solo": false,
+            "scenes": [
+                {
+                "tag": "",
+                "text": "",
+                "conditions": []
+                }
+            ]
         }
     },
     {
@@ -182,6 +226,17 @@
             "containerClass": "",
             "buttonClass": "",
             "bgClass": ""
+        },
+        "pixi": {
+            "id": "forest",
+            "solo": false,
+            "scenes": [
+                {
+                "tag": "",
+                "text": "",
+                "conditions": []
+                }
+            ]
         }
     }
 ]

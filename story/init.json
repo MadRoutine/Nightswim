@@ -15,6 +15,10 @@
         "magicSocks": false,
         "sockPower": false
     },
+    "pixiSettings": {
+        "enabled": true,
+        "globalSolo": false
+    },
     "preloadAudio": [
     ]
 }

@@ -32,6 +32,8 @@ const changePlayback = function () {
     // ANY FURTHER CHANGES TO AUDIO ARE NOW LOCKED UNTIL THIS
     // HAS FINISHED. Once finished, any other requested changes in the queue
     // will be discarded except the very last one.
+    // lockChange is redundant, since this function will only fire when there
+    // is a single entry in the queue.
     lockChange = true;
 
     let lastIndex = playbackQueue.length - 1;
