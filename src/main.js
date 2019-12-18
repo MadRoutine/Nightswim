@@ -59,6 +59,7 @@ let init;
 let waitUntilLoaded;
 let firstAudioTrack;
 let locationQueue = [];
+let locationChangeInProgress = false;
 let storedVersion;
 let storedSpace;
 let storedMute;
@@ -262,6 +263,7 @@ const enterLocation = function () {
         3. If neither is the case: show location content */
 
     let disableHTML = false;
+    let locationChangeInProgress = true;
     let newLoc = locationQueue[0];
     let newLocRef = LocationList.get(newLoc);
 
@@ -389,10 +391,7 @@ const enterLocation = function () {
 
     // 3 - Display Location content
     // Only continue if no scene was triggered
-    if (sceneTriggered) {
-        // Get rid of any further requested location changes
-        locationQueue = [];
-    } else if (!disableHTML) {
+    if (!sceneTriggered && !disableHTML) {
         /*
         parseLocation returns an array with this
         layout:
@@ -478,25 +477,39 @@ const enterLocation = function () {
             // Wait till fade-ins are done
             setTimeout(function () {
                 // Entering location done
+                locationChangeInProgress = false;
+            }, fadeTime);
+        }, fadeTime);
+    }
+
+    // Let's deal with the locationQueue
+    if (sceneTriggered) {
+        // Get rid of any further requested location changes
+        locationQueue = [];
+    } else {
+        let waitUntilFinished = setInterval(function () {
+            if (!locationChangeInProgress && !PixiBusy) {
+                clearInterval(waitUntilFinished);
+
                 let amnt = locationQueue.length;
                 let amntToRemove = 1;
-
+        
                 /* If there is only 1 item in the queue, remove it, because
                 we just ran that job. When there are more than 1, then remove
                 all of them, except last one. Then trigger this function again. */
                 if (amnt > 1) {
                     amntToRemove = amnt - 1;
                 }
-
+        
                 locationQueue.splice(0, amntToRemove);
-
+        
                 if (locationQueue.length > 0 && locationQueue[0] !== newLoc) {
                     enterLocation();
                 }
-
-            }, fadeTime);
-        }, fadeTime);
+            }
+        }, 100);
     }
+
     updateDebugStats();
 };
 

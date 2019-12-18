@@ -1,5 +1,6 @@
 // Let's load and initialize Pixi!
 let PixiLoaded = false;
+let PixiBusy = false;
 
 let app = new PIXI.Application({
     resolution: window.devicePixelRatio || 1,
