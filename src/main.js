@@ -295,7 +295,7 @@ const enterLocation = function () {
                 if (pixies[newLocRef.pixi.id] !== undefined) {
                     if (init.pixiSettings.globalSolo) {
                         HTMLEnabled = false;
-                    } else if (pixies[newLocRef.pixi.solo]) {
+                    } else if (newLocRef.pixi.solo) {
                         HTMLEnabled = false;
                     }
 
@@ -479,6 +479,16 @@ const enterLocation = function () {
                     // Entering location done
                     locationChangeInProgress = false;
                 }, fadeTime);
+            }, fadeTime);
+        } else {
+            // Fade everything out
+            fadeOut("text");
+            fadeOut("choices");
+
+            setTimeout(function () {
+                // Empty everything after fade out
+                replaceById("text", "", 0);
+                replaceById("choices", "", 0);
             }, fadeTime);
         }
  
