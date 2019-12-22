@@ -24,7 +24,7 @@ loader
     })
     .load(function (loader, resources) {
         // Done loading
-        PixiLoaded = true;
+        pixiLoaded = true;
         document.body.appendChild(app.view);
         $("canvas").fadeTo(1000, 1);
 
