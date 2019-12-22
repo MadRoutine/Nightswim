@@ -240,10 +240,36 @@ const changeTrack = function (newSnd) {
     }
 };
 
-const initAudio = function (preloadAudio) {
+const initAudio = function (settings) {
     /* This function takes all soundfiles from the locations, creates
     Howler objects for every sound, preloads the ones from preLoadAudio,
     and then puts the audio objects in the allTracks array */
+
+    let preload;
+    let found = false;
+    let trackNr;
+    let startSnd = settings.startLocRef.locSnd;
+
+    if (settings.muteSound) {
+        muteSound();
+    }
+
+    // Set fadeTime
+    if (typeof settings.fadeTime === "number" && settings.fadeTime >= 0) {
+        fadeTime = settings.fadeTime;
+    }
+
+    // Preload audio from the init.json array
+    if (
+        Array.isArray(settings.preload) &&
+        settings.preload.length > 0 &&
+        !settings.muteSound
+    ) {
+        preload = settings.preload;
+    } else {
+        preload = [];
+    }
+
     LocationList.forEach(function (loc) {
 
         let toPreload = false;
@@ -271,10 +297,10 @@ const initAudio = function (preloadAudio) {
             if (!exists) {
                 let url = "story/audio/" + loc.locSnd;
 
-                /* Check if preLoadAudio contains this url, and if so: have it
+                /* Check if preload contains this url, and if so: have it
                 preload, unless sound is muted */
                 if (!soundMuted) {
-                    preloadAudio.forEach(function (preloadFile) {
+                    preload.forEach(function (preloadFile) {
                         preloadFile = "story/audio/" + preloadFile;
                         if (url === preloadFile) {
                             toPreload = true;
@@ -290,14 +316,47 @@ const initAudio = function (preloadAudio) {
                     preload: toPreload
                 });
 
-                let nextTrack = {
+                let newTrack = {
                     filename: loc.locSnd,
                     howl: sound
                 };
-                allTracks.push(nextTrack);
+
+                allTracks.push(newTrack);
+
+                if (newTrack.filename === startSnd) {
+                    found = true;
+                    trackNr = allTracks.length - 1;
+
+                    currentTrack = newTrack;
+
+                    if (currentTrack.filename !== "no_sound" && !soundMuted) {
+                        playback = "playing";
+
+                        $("#soundInfo").text("playing " + newTrack.filename);
+                    } else {
+                        playback = "paused";
+
+                        $("#soundInfo").text("playback paused");
+                    }
+
+                    if (!soundMuted) {
+                        newTrack.howl.load();
+                        console.log("Loading audiotrack: " +
+                            newTrack.filename);
+                        newTrack.howl.volume(1);
+                    }
+                }
             }
+            
         }
     });
+
+    if (found) {
+        let track = allTracks[trackNr];
+        return track;
+    } else {
+        return null;
+    }
 };
 
 const muteSound = function () {
@@ -352,48 +411,6 @@ const muteSound = function () {
 
         $("#soundBtn").removeClass("sound_on");
         $("#soundBtn").addClass("sound_off");
-    }
-};
-
-const setAudioFadeTime = function (newFadeTime) {
-    if (typeof newFadeTime === "number" && newFadeTime >= 0) {
-        fadeTime = newFadeTime;
-    }
-};
-
-const setCurrentTrack = function (track) {
-    // This function will run at the beginning
-    currentTrack = track;
-
-    if (currentTrack.filename !== "no_sound" && !soundMuted) {
-        playback = "playing";
-
-        $("#soundInfo").text("playing " + track.filename);
-    } else {
-        playback = "paused";
-
-        $("#soundInfo").text("playback paused");
-    }
-};
-
-const getAudioTrack = function (filename) {
-    let found = false;
-    let trackNr;
-    let i = 0;
-
-    while (i < allTracks.length && !found) {
-        if (allTracks[i].filename === filename) {
-            found = true;
-            trackNr = i;
-        }
-        i += 1;
-    }
-
-    if (found) {
-        let track = allTracks[trackNr];
-        return track;
-    } else {
-        return null;
     }
 };
 
@@ -474,15 +491,11 @@ const playSound = function (i) {
     }
 };
 
-export default "loaded";
 export {
     changeTrack,
     initAudio,
     muteSound,
-    setAudioFadeTime,
-    setCurrentTrack,
     soundMuted,
-    getAudioTrack,
     createSoundObj,
     loadSound,
     playSound,
