@@ -1,6 +1,6 @@
 // Let's load and initialize Pixi!
-let PixiLoaded = false;
-let PixiBusy = false;
+let pixiLoaded = false;
+let pixiBusy = false;
 
 let app = new PIXI.Application({
     resolution: window.devicePixelRatio || 1,
@@ -13,7 +13,7 @@ app.renderer.view.style.top = 0;
 app.renderer.view.style.left = 0;
 app.renderer.resize(window.innerWidth, window.innerHeight);
 
-let textureArray = ["bird.png"];
+let textureArray = ["story/textures/bird.png"];
 
 let loader = PIXI.Loader.shared;
 
@@ -29,6 +29,10 @@ loader
         $("canvas").fadeTo(1000, 1);
 
     });
+
+$(window).resize(function () {
+    app.renderer.resize(window.innerWidth, window.innerHeight);
+});
 
 let pixies = {
     apt: {
@@ -60,5 +64,10 @@ let pixies = {
     }
 };
 
-let renderScriptExecuted = true;
 console.log("Render script loaded and executed");
+
+export {
+    pixiLoaded,
+    pixiBusy,
+    pixies
+}

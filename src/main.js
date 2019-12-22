@@ -6,6 +6,15 @@ import {
     loadSound,
     playSound
 } from "./audio.js";
+import {
+    getObj,
+    Obj,
+    ObjList,
+    Npc,
+    NpcList,
+    Location,
+    LocationList
+} from "./classes.js";
 import {startCutscene} from "./cutscene.js";
 import {
     changeBg,
@@ -35,20 +44,15 @@ import {
     startScene
 } from "./scene.js";
 import {
-    getObj,
-    Obj,
-    ObjList,
-    Npc,
-    NpcList,
-    Location,
-    LocationList
-} from "./classes.js";
+    pixiLoaded,
+    pixiBusy,
+    pixies
+} from "./render.js";
 
 const VERSION = "1.2.0-alpha";
 let settings = {};
 let init;
 let locationQueue = [];
-let locationChangeInProgress = false;
 let storedVersion;
 let storedSpace;
 let storedMute;
@@ -147,7 +151,7 @@ let player = {
 };
 
 // PIXI-related:
-let PixiEnabled = false;
+let pixiEnabled = false;
 
 const updateDebugStats = function () {
     if (soundMuted) {
@@ -164,7 +168,6 @@ const updateDebugStats = function () {
     menuTracker.forEach(function (item) {
         $("#menu_tracker").append("<li>&gt; " + item + "</li>");
     });
-
 };
 
 const logError = function (msg) {
@@ -259,7 +262,7 @@ const enterLocation = function () {
     }
 
     // Pixi: exit previous and enter new
-    if (PixiEnabled) {
+    if (pixiEnabled) {
         let enter = false;
         let currentLocRef = LocationList.get(player.currentLoc);
 
@@ -370,7 +373,7 @@ const enterLocation = function () {
     // Only continue if no scene was triggered
     if (!sceneTriggered) {
         // If Pixi is enabled: check and run Pixi-scenes whose conditions are true
-        if (PixiEnabled) {
+        if (pixiEnabled) {
             let scenes = newLocRef.pixi.scenes;
             scenes.forEach(function (scene, i) {
                 if (checkConditions(scene.conditions)) {
@@ -483,7 +486,7 @@ const enterLocation = function () {
  
         // Let's deal with the locationQueue
         let waitUntilFinished = setInterval(function () {
-            if (!locationChangeInProgress && !PixiBusy) {
+            if (!locationChangeInProgress && !pixiBusy) {
                 clearInterval(waitUntilFinished);
 
                 let amnt = locationQueue.length;
@@ -681,7 +684,7 @@ const startStory = function (resume) {
 
     let waitUntilLoaded = setInterval(function () {
         // We're not sure if Pixi has loaded yet, so let's check!
-        if (!PixiEnabled || PixiLoaded) {
+        if (!pixiEnabled || pixiLoaded) {
             clearInterval(waitUntilLoaded);
             setTimeout(function () {
                 /*
@@ -1460,7 +1463,7 @@ $(document).ready(function () {
         await initReady;
 
         if (init.pixiSettings.enabled) {
-            PixiEnabled = true;
+            pixiEnabled = true;
         }
 
         // Check for saved progress
